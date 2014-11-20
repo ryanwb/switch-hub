@@ -7,85 +7,48 @@
 
 const int device_pin = 7;	// Pin out to switch the AC relay
 
+void flipOn() {
+	digitalWrite(device_pin, LOW);
+}
+
+void flipOff() {
+	digitalWrite(device_pin, HIGH);
+}
+
 void setup() {
 	// Start serial communication to bluetooth module
 	// Supported Baud rates: 2400, 4800, 9600, 19200, 38400, 57600, 115200, 230400
 	Serial.begin(9600);
+	Serial.flush();
 	pinMode(device_pin, OUTPUT);
 
-	// Testing
-	delay(1000);
-	digitalWrite(device_pin, HIGH);
-	delay(1000);
-	digitalWrite(device_pin, LOW);
-	delay(1000);
-	digitalWrite(device_pin, HIGH);
-	delay(200);
-	digitalWrite(device_pin, LOW);
-	delay(1000);
-	digitalWrite(device_pin, HIGH);
-	delay(200);
-	digitalWrite(device_pin, LOW);
-	delay(1000);
-	digitalWrite(device_pin, HIGH);
-	delay(200);
-}
-
-void flipOn()
-{
-	digitalWrite(device_pin, LOW);
-}
-
-void flipOff()
-{
-	digitalWrite(device_pin, HIGH);
-}
-
-void handleFlip() {
-	switch(Serial.read())
-	{
-		case FLIP_ON:
-			flipOn();
-			break;
-		case FLIP_OFF:
-			flipOff();
-			break;
-		default:
-			break;
+	// Testing init sequence
+	for (int i = 1; i <= 3; i++) {
+		flipOn();
+		delay(500*i);
+		flipOff();
+		delay(500*i);
 	}
-}
-
-void quickTest()
-{
-	digitalWrite(device_pin, LOW);
-	delay(100);
-	digitalWrite(device_pin, HIGH);
-	delay(100);
-	digitalWrite(device_pin, LOW);
-	delay(100);
-	digitalWrite(device_pin, HIGH);
-	delay(100);
 }
 
 void loop()
 {
-	if (Serial.available() > 0)
-	{
-		quickTest();
-		if (Serial.read() == START)
-		{
-			switch(Serial.read())
-			{
-				case OP_FLIP:
-					handleFlip();
-					break;
-
-				default:
-					break;
-			}
-		}
+	// Listen for data on the serial connection
+    if (Serial.available() > 0)
+    {
+        char x = Serial.read();
+        if (x == 0xFF) {
+        	Serial.println("on");
+        	flipOn();
+        }
+        else if (x == 0xFE) {
+        	Serial.println("off");
+        	flipOff();
+        }
+        else {
+        	Serial.println(x);
+        }
     }
+    delay(50);
 }
-
-
 

@@ -5,14 +5,14 @@
 #define COMM_H
 
 // Start/sync byte (byte 0)
-const char START        = 0xFF;
+const int START        = 0xFF;
 
 // Opcodes (byte 1)
-const char OP_FLIP	= 0x01;
+const int OP_FLIP	= 0x01;
 
 // OP_FLIP args (byte 2)
-const char FLIP_ON	= 0x01;
-const char FLIP_OFF	= 0x00;
+const int FLIP_ON	= 0x01;
+const int FLIP_OFF	= 0x00;
 
 #endif
 
