@@ -7,9 +7,9 @@ register('kPTnWzHeMI900B83Vee52eXYqQWLrJGUBcc4XuJu', 'FWvTqnNw4IKDIHb70oyzqK0CjH
 
 from parse_rest.datatypes import Object
 
-bluetoothSerial = serial.Serial("/dev/rfcomm2", baudrate=9600)
-onMsgExample = "\x31"
-offMsgExample = "\x32"
+bluetoothSerial = serial.Serial("/dev/rfcomm1", baudrate=9600)
+onMsgExample = bytes([0xFF, 0x01, 0x01])
+offMsgExample = bytes([0xFF, 0x01, 0x00])
 
 class ApplianceModel(Object):
     pass
@@ -42,8 +42,7 @@ if __name__ == "__main__":
             else:
                 print "Sending OFF command"
                 bluetoothSerial.write(onMsgExample)
-                data_in = bluetoothSerial.readline()
-                print data_in.encode("hex")
+                print bluetoothSerial.readline()
             # update the database to synced
             appliance.synced=True
             appliance.save()
