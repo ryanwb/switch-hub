@@ -6,10 +6,12 @@ import java.util.List;
 import com.parse.*;
 
 import android.app.Activity;
+import android.graphics.Typeface;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.LinearLayout;
 import android.widget.ToggleButton;
@@ -24,29 +26,43 @@ public class MainActivity extends Activity {
 
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
+		
+	    Typeface tf = Typeface.createFromAsset(this.getAssets(),
+	            "fonts/raleway.ttf");
+	    TextView tv = (TextView) findViewById(R.id.logo);
+	    tv.setTypeface(tf);
 
 		// Get list of appliances from Parse.com and place them in ApplianceModel objects
 		ParseQuery<ParseObject> query = ParseQuery.getQuery("ApplianceModel");
 		query.findInBackground(new FindCallback<ParseObject>() {
 			public void done(List<ParseObject> applianceList, ParseException e) {
 				if (e == null) {
-					for(int i = 0; i < applianceList.size(); i++) {
-						ApplianceModel appliance = new ApplianceModel();
-						appliance.setObjectId(applianceList.get(i).getObjectId());
-						appliance.setApplianceId(applianceList.get(i).getInt("applianceId"));
-						appliance.setPower(applianceList.get(i).getBoolean("power"));
-						appliance.setSynced(applianceList.get(i).getBoolean("synced"));
+					LinearLayout layout = (LinearLayout) findViewById(R.id.main);
+					
+					for(ParseObject appliance : applianceList) {
+						ApplianceModel appl = new ApplianceModel();
+						appl.setObjectId(appliance.getObjectId());
+						appl.setApplianceName(appliance.getString("ApplianceName"));
+						appl.setApplianceId(appliance.getInt("applianceId"));
+						appl.setPower(appliance.getBoolean("power"));
+						appl.setSynced(appliance.getBoolean("synced"));
 
-						appliances.add(appliance);
+						appliances.add(appl);
 
 						// Create views for the fetched appliances
-						LinearLayout layout = (LinearLayout) findViewById(R.id.layout);
-						LinearLayout layout_row = new LinearLayout(getBaseContext());
+						LinearLayout layout_row = new LinearLayout(MainActivity.this);
 
-						TextView text = new TextView(MainActivity.this);
-						text.setText("Appliance " + appliance.getApplianceId() + " ");
+						TextView text_row = new TextView(MainActivity.this);
+						text_row.setText("Appliance " + appl.getApplianceId() + " ");
+						text_row.setLayoutParams(new LinearLayout.LayoutParams(
+	            	    		0,ViewGroup.LayoutParams.WRAP_CONTENT,1.0f));
+						
+						layout_row.addView(text_row);
 						ToggleButton toggle = new ToggleButton(MainActivity.this);
-						toggle.setChecked(appliance.isPower());
+						toggle.setLayoutParams(new LinearLayout.LayoutParams(
+		            	        ViewGroup.LayoutParams.WRAP_CONTENT,
+		            	        ViewGroup.LayoutParams.WRAP_CONTENT));
+						toggle.setChecked(appl.isPower());
 
 						final String objectId = appliance.getObjectId();
 						// add listener to toggle
@@ -55,12 +71,10 @@ public class MainActivity extends Activity {
 							public void onClick(View v) {
 								onToggleClicked(v, objectId);
 							}
-						} );
+						});
 
-						layout_row.addView(text);
 						layout_row.addView(toggle);
-
-						layout.addView(layout_row);                    	
+						layout.addView(layout_row);                 	
 					}
 				} else {
 					System.out.println("Error: " + e.getMessage());
@@ -71,38 +85,27 @@ public class MainActivity extends Activity {
 	}
 
 	public void onToggleClicked(View view, String objectId) {
-		boolean toOn = ((ToggleButton) view).isChecked();
+		final boolean toOn = ((ToggleButton) view).isChecked();
 
-		if (toOn) {
-			// turn on appliance
-			ParseQuery<ParseObject> query = ParseQuery.getQuery("ApplianceModel");
-
-			// retrieve the object by id
-			query.getInBackground(objectId, new GetCallback<ParseObject>() {
-				public void done(ParseObject applianceModel, ParseException e) {
-					if (e == null) {
+		ParseQuery<ParseObject> query = ParseQuery.getQuery("ApplianceModel");
+		// retrieve the object by id
+		query.getInBackground(objectId, new GetCallback<ParseObject>() {
+			public void done(ParseObject applianceModel, ParseException e) {
+				if (e == null) {
+					if (toOn) {
+						// turn on appliance		
 						applianceModel.put("power", true);
 						applianceModel.put("synced", false);
 						applianceModel.saveInBackground();
 					}
-				}
-			});
-		} else {
-			// turn off appliance
-			ParseQuery<ParseObject> query = ParseQuery.getQuery("ApplianceModel");
-
-			// retrieve the object by id
-			query.getInBackground(objectId, new GetCallback<ParseObject>() {
-				public void done(ParseObject applianceModel, ParseException e) {
-					if (e == null) {
-						// update fields
+					else {
 						applianceModel.put("power", false);
 						applianceModel.put("synced", false);
 						applianceModel.saveInBackground();
 					}
 				}
-			});
-		}
+			}
+		});
 	}
 
 	@Override

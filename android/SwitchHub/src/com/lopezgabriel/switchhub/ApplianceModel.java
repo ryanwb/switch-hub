@@ -4,6 +4,7 @@ public class ApplianceModel {
 	
 	private String objectId;
 	private int applianceId;
+	private String applianceName;
 	private boolean power;
 	private boolean synced;
 	
@@ -18,6 +19,12 @@ public class ApplianceModel {
 	}
 	public void setApplianceId(int applianceId) {
 		this.applianceId = applianceId;
+	}
+	public String getApplianceName() {
+		return applianceName;
+	}
+	public void setApplianceName(String applianceName) {
+		this.applianceName = applianceName;
 	}
 	public boolean isPower() {
 		return power;
