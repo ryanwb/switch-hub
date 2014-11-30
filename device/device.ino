@@ -3,16 +3,25 @@
 
 #include "comm.h"
 
-// char buff[64];
-
 const int device_pin = 7;	// Pin out to switch the AC relay
+byte wbuffer[BUFF_LEN];		// Write/output buffer
+State s;					// State of the state machine determining how the Bluetooth byte stream is parsed
 
+// Power on device
 void flipOn() {
 	digitalWrite(device_pin, LOW);
 }
 
+// Power off device
 void flipOff() {
 	digitalWrite(device_pin, HIGH);
+}
+
+void sendAck(byte op) {
+	wbuffer[0] = START;
+	wbuffer[1] = OP_ACK;
+	wbuffer[2] = op;
+	Serial.write(wbuffer, 3);
 }
 
 void setup() {
@@ -20,6 +29,7 @@ void setup() {
 	// Supported Baud rates: 2400, 4800, 9600, 19200, 38400, 57600, 115200, 230400
 	Serial.begin(9600);
 	Serial.flush();
+
 	pinMode(device_pin, OUTPUT);
 
 	// Testing init sequence
@@ -29,6 +39,9 @@ void setup() {
 		flipOff();
 		delay(500*i);
 	}
+
+	// Set state to AWAIT_START to wait for the sync byte
+	s = AWAIT_START;
 }
 
 void loop()
@@ -36,18 +49,44 @@ void loop()
 	// Listen for data on the serial connection
     if (Serial.available() > 0)
     {
-        char x = Serial.read();
-        if (x == 0xFF) {
-        	Serial.println("on");
-        	flipOn();
+        int x = Serial.read();	// Read one byte
+
+        if (x == -1)			// Read error (nothing in input buffer)
+        {
+        	s = AWAIT_START;
         }
-        else if (x == 0xFE) {
-        	Serial.println("off");
-        	flipOff();
+        else if (x == START)	// Sync byte is reserved independent of state (may change later)
+        {
+        	s = AWAIT_CMD_ID;
         }
-        else {
-        	Serial.println(x);
-        }
+        else
+        {
+	        switch (s)
+	        {
+	        	case AWAIT_CMD_ID:			// Await command ID
+	        		if (x == OP_FLIP)
+	        			s = AWAIT_FLIP_ID;
+	        		else
+	        			s = AWAIT_START;
+	        		break;
+
+        		case AWAIT_FLIP_ID:			// Await flip ID
+        			if (x == FLIP_ON) {
+        				flipOn();
+        				sendAck((byte)OP_FLIP);
+        			}
+        			else if (x == FLIP_OFF) {
+        				flipOff();
+        				sendAck((byte)OP_FLIP);
+        			}
+        			s = AWAIT_START;
+        			break;
+
+        		default:					// Await start/sync byte
+        			// Did not receive start byte; do nothing
+        			break;
+	        }
+	    }
     }
     delay(50);
 }
