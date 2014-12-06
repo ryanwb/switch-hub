@@ -5,13 +5,17 @@ import java.util.List;
 
 import com.parse.*;
 
+import android.annotation.TargetApi;
 import android.app.Activity;
+import android.content.Intent;
 import android.graphics.Typeface;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.View.OnClickListener;
 import android.widget.TextView;
 import android.widget.LinearLayout;
 import android.widget.ToggleButton;
@@ -21,20 +25,21 @@ public class MainActivity extends Activity {
 	List<ApplianceModel> appliances = new ArrayList<ApplianceModel>(); 
 
 	@Override
-	protected void onCreate(Bundle savedInstanceState) {
-		Parse.initialize(this, "kPTnWzHeMI900B83Vee52eXYqQWLrJGUBcc4XuJu", "XT15aZdUPjk92tIkMTJkOHQdkrwznhmndXB5Gp5W");
-
-		super.onCreate(savedInstanceState);
+	protected void onCreate(Bundle savedInstanceState) {		
+		super.onCreate(savedInstanceState);		
 		setContentView(R.layout.activity_main);
-		
+	
 	    Typeface tf = Typeface.createFromAsset(this.getAssets(),
 	            "fonts/raleway.ttf");
 	    TextView tv = (TextView) findViewById(R.id.logo);
 	    tv.setTypeface(tf);
+	    
+		ParseUser user = ParseUser.getCurrentUser();
 
 		// Get list of appliances from Parse.com and place them in ApplianceModel objects
-		ParseQuery<ParseObject> query = ParseQuery.getQuery("ApplianceModel");
+		ParseQuery<ParseObject> query = ParseQuery.getQuery("ApplianceModel").whereEqualTo("user", user);
 		query.findInBackground(new FindCallback<ParseObject>() {
+			@Override
 			public void done(List<ParseObject> applianceList, ParseException e) {
 				if (e == null) {
 					LinearLayout layout = (LinearLayout) findViewById(R.id.main);
@@ -82,14 +87,36 @@ public class MainActivity extends Activity {
 			}
 		});
 
+		
+		findViewById(R.id.logout_button).setOnClickListener(new OnClickListener() {
+		      @TargetApi(Build.VERSION_CODES.HONEYCOMB)
+		      @Override
+		      public void onClick(View v) {
+		        ParseUser.logOut();
+
+		        // FLAG_ACTIVITY_CLEAR_TASK only works on API 11, so if the user
+		        // logs out on older devices, we'll just exit.
+		        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+		          Intent intent = new Intent(MainActivity.this,
+		              SampleDispatchActivity.class);
+		          intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK
+		              | Intent.FLAG_ACTIVITY_NEW_TASK);
+		          startActivity(intent);
+		        } else {
+		          finish();
+		        }
+		      }
+		    });
 	}
 
 	public void onToggleClicked(View view, String objectId) {
+		ParseUser user = ParseUser.getCurrentUser();
 		final boolean toOn = ((ToggleButton) view).isChecked();
 
-		ParseQuery<ParseObject> query = ParseQuery.getQuery("ApplianceModel");
+		ParseQuery<ParseObject> query = ParseQuery.getQuery("ApplianceModel").whereEqualTo("user", user);
 		// retrieve the object by id
 		query.getInBackground(objectId, new GetCallback<ParseObject>() {
+			@Override
 			public void done(ParseObject applianceModel, ParseException e) {
 				if (e == null) {
 					if (toOn) {

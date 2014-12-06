@@ -6,4 +6,5 @@
     <string name="action_refresh">Refresh</string>
     <string name="logo">SwitchHub</string>
 
+    <string name="profile_logout_button_label">Log out</string>
 </resources>
