@@ -53,10 +53,12 @@ public final class R {
         public static final int com_parse_ui_parse_login_button_background_selector=0x7f020004;
         public static final int com_parse_ui_twitter_login_button_background_selector=0x7f020005;
         public static final int com_parse_ui_twitter_login_logo=0x7f020006;
-        public static final int ic_action_refresh=0x7f020007;
-        public static final int ic_launcher=0x7f020008;
+        public static final int ic_action_new=0x7f020007;
+        public static final int ic_action_refresh=0x7f020008;
+        public static final int ic_launcher=0x7f020009;
     }
     public static final class id {
+        public static final int action_add_device=0x7f0a0018;
         public static final int action_refresh=0x7f0a0017;
         public static final int action_settings=0x7f0a0016;
         public static final int app_logo=0x7f0a0003;
@@ -92,6 +94,7 @@ public final class R {
         public static final int com_parse_ui_parse_login_third_party_section=0x7f030006;
         public static final int com_parse_ui_parse_signup_form=0x7f030007;
         public static final int com_parse_ui_parse_signup_fragment=0x7f030008;
+        public static final int dialog_add_device=0x7f030009;
     }
     public static final class menu {
         public static final int main=0x7f090000;
@@ -102,6 +105,7 @@ public final class R {
     public static final class string {
         public static final int action_refresh=0x7f060034;
         public static final int action_settings=0x7f060033;
+        public static final int add_device=0x7f060036;
         public static final int app_name=0x7f060032;
         public static final int com_parse_ui_confirm_password_input_hint=0x7f06000a;
         public static final int com_parse_ui_create_account_button_label=0x7f06000c;
@@ -154,7 +158,7 @@ public final class R {
         public static final int com_parse_ui_username_input_hint=0x7f060002;
         public static final int com_parse_ui_username_taken_toast=0x7f060013;
         public static final int logo=0x7f060035;
-        public static final int profile_logout_button_label=0x7f060036;
+        public static final int profile_logout_button_label=0x7f060037;
     }
     public static final class style {
         /** 

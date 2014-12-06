@@ -23,7 +23,7 @@ package com.lopezgabriel.switchhub;
 
 import com.parse.ui.ParseLoginDispatchActivity;
 
-public class SampleDispatchActivity extends ParseLoginDispatchActivity {
+public class DispatchActivity extends ParseLoginDispatchActivity {
 
   @Override
   protected Class<?> getTargetClass() {

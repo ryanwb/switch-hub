@@ -11,5 +11,10 @@
         android:orderInCategory="100"
         android:showAsAction="always"
         android:title="@string/action_refresh"/>
-
+	<item 
+	    android:id="@+id/action_add_device"
+        android:title="@string/add_device"
+        android:showAsAction="always"
+         android:icon="@drawable/ic_action_new"
+          />
 </menu>

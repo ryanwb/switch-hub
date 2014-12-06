@@ -7,6 +7,8 @@ import com.parse.*;
 
 import android.annotation.TargetApi;
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Typeface;
 import android.os.Build;
@@ -16,6 +18,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.View.OnClickListener;
+import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.LinearLayout;
 import android.widget.ToggleButton;
@@ -47,8 +50,7 @@ public class MainActivity extends Activity {
 					for(ParseObject appliance : applianceList) {
 						ApplianceModel appl = new ApplianceModel();
 						appl.setObjectId(appliance.getObjectId());
-						appl.setApplianceName(appliance.getString("ApplianceName"));
-						appl.setApplianceId(appliance.getInt("applianceId"));
+						appl.setApplianceName(appliance.getString("name"));
 						appl.setPower(appliance.getBoolean("power"));
 						appl.setSynced(appliance.getBoolean("synced"));
 
@@ -58,7 +60,7 @@ public class MainActivity extends Activity {
 						LinearLayout layout_row = new LinearLayout(MainActivity.this);
 
 						TextView text_row = new TextView(MainActivity.this);
-						text_row.setText("Appliance " + appl.getApplianceId() + " ");
+						text_row.setText(appl.getApplianceName() + " ");
 						text_row.setLayoutParams(new LinearLayout.LayoutParams(
 	            	    		0,ViewGroup.LayoutParams.WRAP_CONTENT,1.0f));
 						
@@ -98,7 +100,7 @@ public class MainActivity extends Activity {
 		        // logs out on older devices, we'll just exit.
 		        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
 		          Intent intent = new Intent(MainActivity.this,
-		              SampleDispatchActivity.class);
+		              DispatchActivity.class);
 		          intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK
 		              | Intent.FLAG_ACTIVITY_NEW_TASK);
 		          startActivity(intent);
@@ -143,6 +145,45 @@ public class MainActivity extends Activity {
 			break;
 		case R.id.action_settings:
 			// do something?
+			break;
+		case R.id.action_add_device:		
+			LinearLayout layout = new LinearLayout(this);
+			layout.setOrientation(LinearLayout.VERTICAL);
+			
+			final EditText name = new EditText(this);
+			name.setHint("Appliance Name");
+			layout.addView(name);
+			
+			final EditText address = new EditText(this);
+			address.setHint("Bluetooth Address");
+			layout.addView(address);
+			
+			AlertDialog.Builder alert = new AlertDialog.Builder(this)
+			.setTitle("Add Your New Appliance")
+			.setView(layout)
+			.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+				public void onClick(DialogInterface dialog, int whichButton) {
+					
+					 ParseObject new_appliance = new ParseObject("ApplianceModel");
+					 new_appliance.put("power", true);
+					 new_appliance.put("synced", false);
+					 new_appliance.put("valid", false);
+					 new_appliance.put("name", name.getText().toString());
+					 new_appliance.put("bluetooth", address.getText().toString());
+					 new_appliance.put("user", ParseUser.getCurrentUser());
+					 new_appliance.saveInBackground();
+					 
+					 // Call loading screen after and await for valid field
+				  }
+			}).setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+			  public void onClick(DialogInterface dialog, int whichButton) {
+			    // Canceled.
+			  }
+			});
+			
+			// 3. Get the AlertDialog from create()
+			AlertDialog dialog = alert.create();
+			dialog.show();
 			break;
 		default:
 			break;

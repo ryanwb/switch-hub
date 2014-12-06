@@ -3,7 +3,6 @@ package com.lopezgabriel.switchhub;
 public class ApplianceModel {
 	
 	private String objectId;
-	private int applianceId;
 	private String applianceName;
 	private boolean power;
 	private boolean synced;
@@ -13,12 +12,6 @@ public class ApplianceModel {
 	}
 	public void setObjectId(String objectId) {
 		this.objectId = objectId;
-	}
-	public int getApplianceId() {
-		return applianceId;
-	}
-	public void setApplianceId(int applianceId) {
-		this.applianceId = applianceId;
 	}
 	public String getApplianceName() {
 		return applianceName;
