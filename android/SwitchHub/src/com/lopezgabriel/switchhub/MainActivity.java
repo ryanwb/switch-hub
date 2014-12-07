@@ -13,6 +13,8 @@ import android.content.Intent;
 import android.graphics.Typeface;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -21,7 +23,8 @@ import android.view.View.OnClickListener;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.LinearLayout;
-import android.widget.ToggleButton;
+import android.widget.Switch;
+import android.app.ProgressDialog;
 
 public class MainActivity extends Activity {
 
@@ -65,7 +68,7 @@ public class MainActivity extends Activity {
 	            	    		0,ViewGroup.LayoutParams.WRAP_CONTENT,1.0f));
 						
 						layout_row.addView(text_row);
-						ToggleButton toggle = new ToggleButton(MainActivity.this);
+						Switch toggle = new Switch(MainActivity.this);
 						toggle.setLayoutParams(new LinearLayout.LayoutParams(
 		            	        ViewGroup.LayoutParams.WRAP_CONTENT,
 		            	        ViewGroup.LayoutParams.WRAP_CONTENT));
@@ -113,28 +116,30 @@ public class MainActivity extends Activity {
 
 	public void onToggleClicked(View view, String objectId) {
 		ParseUser user = ParseUser.getCurrentUser();
-		final boolean toOn = ((ToggleButton) view).isChecked();
+		final boolean toOn = ((Switch) view).isChecked();
 
-		ParseQuery<ParseObject> query = ParseQuery.getQuery("ApplianceModel").whereEqualTo("user", user);
-		// retrieve the object by id
-		query.getInBackground(objectId, new GetCallback<ParseObject>() {
-			@Override
-			public void done(ParseObject applianceModel, ParseException e) {
-				if (e == null) {
-					if (toOn) {
-						// turn on appliance		
-						applianceModel.put("power", true);
-						applianceModel.put("synced", false);
-						applianceModel.saveInBackground();
-					}
-					else {
-						applianceModel.put("power", false);
-						applianceModel.put("synced", false);
-						applianceModel.saveInBackground();
-					}
-				}
+		try {
+			ParseQuery<ParseObject> query = ParseQuery.getQuery("ApplianceModel").whereEqualTo("user", user);
+			// retrieve the object by id
+			ParseObject applianceModel = query.get(objectId);
+			if (toOn) {
+				// turn on appliance		
+				applianceModel.put("power", true);
+				applianceModel.put("synced", false);
+				applianceModel.saveInBackground();
 			}
-		});
+			else {
+				applianceModel.put("power", false);
+				applianceModel.put("synced", false);
+				applianceModel.saveInBackground();
+			}
+
+			// wait for the hub to sync the toggle
+			launchSyncingDialog(view, objectId, toOn);	
+
+		} catch (ParseException e) {
+			e.printStackTrace();
+		}
 	}
 
 	@Override
@@ -199,4 +204,90 @@ public class MainActivity extends Activity {
 		return true;
 	}
 
+	public void launchSyncingDialog(final View view, final String objectId, final boolean toOn) {
+		final String power = toOn ? "on" : "off";
+		final ProgressDialog progressDialog = ProgressDialog.show(MainActivity.this, "", "Turning device " + power + "...", true);
+		new Thread(new Runnable() {
+			@Override
+			public void run() {
+				Thread thread = new Thread(new Runnable() {
+					@Override
+					public void run() {
+						ParseQuery<ParseObject> query = ParseQuery.getQuery("ApplianceModel");
+						try {
+							for (int i = 0; i < 10; i++) {
+								ParseObject applianceModel = query.get(objectId);
+								if (applianceModel.getBoolean("synced") == true) {
+									// toggle has been synced with the hub
+									break;
+								}
+								// sleep for .25 seconds
+								Thread.sleep(500);
+							}
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
+						progressDialog.dismiss();
+					}			
+				});
+				thread.start();
+				try {
+					thread.join();
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+
+				Handler handler = new Handler(Looper.getMainLooper());
+				handler.post(new Runnable() {
+					@Override
+					public void run() {
+						try {
+							ParseQuery<ParseObject> query = ParseQuery.getQuery("ApplianceModel");
+							// if failed to sync
+							ParseObject applianceModel = query.get(objectId);
+							if(!applianceModel.getBoolean("synced")) {				
+								applianceModel = query.get(objectId);
+								// reset toggle
+								if (toOn) {
+									// turn on appliance		
+									applianceModel.put("power", false);
+									applianceModel.put("synced", true);
+									applianceModel.saveInBackground();
+								}
+								else {
+									applianceModel.put("power", true);
+									applianceModel.put("synced", true);
+									applianceModel.saveInBackground();
+								}
+								((Switch) view).toggle();
+
+								launchSyncFailureAlert(power);
+							}
+						} catch (ParseException e) {
+							e.printStackTrace();
+						}
+					}
+				});
+			}
+		}).start();
+	}
+
+	public void launchSyncFailureAlert(String power) {
+		AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(MainActivity.this);
+
+		// set dialog message
+		alertDialogBuilder
+		.setMessage("Failed to turn " + power + " device.")
+		.setCancelable(false)
+		.setNegativeButton("OK",new DialogInterface.OnClickListener() {
+			public void onClick(DialogInterface dialog,int id) {
+				dialog.dismiss();
+			}
+		});
+
+		// create alert dialog
+		AlertDialog alertDialog = alertDialogBuilder.create();
+		alertDialog.show();
+	}
+	
 }
