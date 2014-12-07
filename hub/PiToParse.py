@@ -8,8 +8,8 @@ register('kPTnWzHeMI900B83Vee52eXYqQWLrJGUBcc4XuJu', 'FWvTqnNw4IKDIHb70oyzqK0CjH
 from parse_rest.datatypes import Object
 
 bluetoothSerial = serial.Serial("/dev/rfcomm2", baudrate=9600)
-onMsgExample = "\x31"
-offMsgExample = "\x32"
+onMsgExample = "\xFF\x01\x01"
+offMsgExample = "\xFF\x01\x00"
 
 class ApplianceModel(Object):
     pass
@@ -37,13 +37,14 @@ if __name__ == "__main__":
             #TODO: updated the arduino's status
             if appliance.power == True:
                 print "Sending ON command"
-                bluetoothSerial.write(offMsgExample)
-                print bluetoothSerial.readline()
-            else:
-                print "Sending OFF command"
                 bluetoothSerial.write(onMsgExample)
                 data_in = bluetoothSerial.readline()
-                print data_in.encode("hex")
+                print "Response: " + data_in.encode("hex")
+            else:
+                print "Sending OFF command"
+                bluetoothSerial.write(offMsgExample)
+                data_in = bluetoothSerial.readline()
+                print "Response: " + data_in.encode("hex")
             # update the database to synced
             appliance.synced=True
             appliance.save()

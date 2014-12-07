@@ -1,15 +1,20 @@
 import serial
 import time
 
-bluetoothSerial = serial.Serial("/dev/rfcomm1", baudrate=9600)
+bluetoothSerial = serial.Serial("/dev/rfcomm2", baudrate=9600, timeout=1)
+print bluetoothSerial.name
 
-onMsgExample = bytes([0xFF, 0x01, 0x01])
-offMsgExample = bytes([0xFF, 0x01, 0x00])
+onMsgExample = "\xFF\x01\x01"
+offMsgExample = "\xFF\x01\x00"
 
 while True:
   print "Sending ON command"
   bluetoothSerial.write(onMsgExample)
-  time.sleep(5)
+  data_in =  bluetoothSerial.readline();
+  print data_in.encode("hex")
+  time.sleep(1)
   print "Sending OFF command"
   bluetoothSerial.write(offMsgExample)
-  time.sleep(5)
+  data_in =  bluetoothSerial.readline();
+  print data_in.encode("hex")
+  time.sleep(1)
