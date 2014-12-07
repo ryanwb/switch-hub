@@ -36,12 +36,12 @@ public class MainActivity extends Activity {
 	protected void onCreate(Bundle savedInstanceState) {		
 		super.onCreate(savedInstanceState);		
 		setContentView(R.layout.activity_main);
-	
-	    Typeface tf = Typeface.createFromAsset(this.getAssets(),
-	            "fonts/raleway.ttf");
-	    TextView tv = (TextView) findViewById(R.id.logo);
-	    tv.setTypeface(tf);
-	    
+
+		Typeface tf = Typeface.createFromAsset(this.getAssets(),
+				"fonts/raleway.ttf");
+		TextView tv = (TextView) findViewById(R.id.logo);
+		tv.setTypeface(tf);
+
 		ParseUser user = ParseUser.getCurrentUser();
 
 		// Get list of appliances from Parse.com and place them in ApplianceModel objects
@@ -51,8 +51,12 @@ public class MainActivity extends Activity {
 			public void done(List<ParseObject> applianceList, ParseException e) {
 				if (e == null) {
 					LinearLayout layout = (LinearLayout) findViewById(R.id.main);
-					
+
 					for(ParseObject appliance : applianceList) {
+						if (!appliance.getBoolean("valid")) {
+							continue; // Don't display if invalid
+						}
+						
 						ApplianceModel appl = new ApplianceModel();
 						appl.setObjectId(appliance.getObjectId());
 						appl.setApplianceName(appliance.getString("name"));
@@ -67,20 +71,20 @@ public class MainActivity extends Activity {
 						TextView text_row = new TextView(MainActivity.this);
 						text_row.setText(appl.getApplianceName() + " ");
 						text_row.setLayoutParams(new LinearLayout.LayoutParams(
-	            	    		0,ViewGroup.LayoutParams.WRAP_CONTENT,1.0f));
-						
+								0,ViewGroup.LayoutParams.WRAP_CONTENT,1.0f));
+
 						layout_row.addView(text_row);
 						final Switch toggle = new Switch(MainActivity.this);
 						toggle.setLayoutParams(new LinearLayout.LayoutParams(
-		            	        ViewGroup.LayoutParams.WRAP_CONTENT,
-		            	        ViewGroup.LayoutParams.WRAP_CONTENT));
+								ViewGroup.LayoutParams.WRAP_CONTENT,
+								ViewGroup.LayoutParams.WRAP_CONTENT));
 						toggle.setChecked(appl.isPower());
 
 						final String objectId = appliance.getObjectId();
-						
+
 						// add listener to toggle
 						toggle.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-							
+
 							@Override
 							public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
 								if (!resetToggle) {
@@ -98,26 +102,26 @@ public class MainActivity extends Activity {
 			}
 		});
 
-		
-		findViewById(R.id.logout_button).setOnClickListener(new OnClickListener() {
-		      @TargetApi(Build.VERSION_CODES.HONEYCOMB)
-		      @Override
-		      public void onClick(View v) {
-		        ParseUser.logOut();
 
-		        // FLAG_ACTIVITY_CLEAR_TASK only works on API 11, so if the user
-		        // logs out on older devices, we'll just exit.
-		        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
-		          Intent intent = new Intent(MainActivity.this,
-		              DispatchActivity.class);
-		          intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK
-		              | Intent.FLAG_ACTIVITY_NEW_TASK);
-		          startActivity(intent);
-		        } else {
-		          finish();
-		        }
-		      }
-		    });
+		findViewById(R.id.logout_button).setOnClickListener(new OnClickListener() {
+			@TargetApi(Build.VERSION_CODES.HONEYCOMB)
+			@Override
+			public void onClick(View v) {
+				ParseUser.logOut();
+
+				// FLAG_ACTIVITY_CLEAR_TASK only works on API 11, so if the user
+				// logs out on older devices, we'll just exit.
+				if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+					Intent intent = new Intent(MainActivity.this,
+							DispatchActivity.class);
+					intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK
+							| Intent.FLAG_ACTIVITY_NEW_TASK);
+					startActivity(intent);
+				} else {
+					finish();
+				}
+			}
+		});
 	}
 
 	public void onToggleClicked(View view, String objectId) {
@@ -141,7 +145,7 @@ public class MainActivity extends Activity {
 			}
 
 			// wait for the hub to sync the toggle
-			launchSyncingDialog(view, objectId, toOn);	
+			launchSyncingDialog(view, objectId, toOn, applianceModel.getString("name"));	
 
 		} catch (ParseException e) {
 			e.printStackTrace();
@@ -160,39 +164,44 @@ public class MainActivity extends Activity {
 		case R.id.action_add_device:		
 			LinearLayout layout = new LinearLayout(this);
 			layout.setOrientation(LinearLayout.VERTICAL);
-			
+
 			final EditText name = new EditText(this);
 			name.setHint("Appliance Name");
 			layout.addView(name);
-			
+
 			final EditText address = new EditText(this);
 			address.setHint("Bluetooth Address");
 			layout.addView(address);
-			
+
 			AlertDialog.Builder alert = new AlertDialog.Builder(this)
 			.setTitle("Add Your New Appliance")
 			.setView(layout)
 			.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
 				public void onClick(DialogInterface dialog, int whichButton) {
-					
-					 ParseObject new_appliance = new ParseObject("ApplianceModel");
-					 new_appliance.put("power", true);
-					 new_appliance.put("synced", false);
-					 new_appliance.put("valid", false);
-					 new_appliance.put("name", name.getText().toString());
-					 new_appliance.put("bluetooth", address.getText().toString());
-					 new_appliance.put("user", ParseUser.getCurrentUser());
-					 new_appliance.saveInBackground();
-					 
-					 // Call loading screen after and await for valid field
-					 
-				  }
+
+					ParseObject newAppliance = new ParseObject("ApplianceModel");
+					newAppliance.put("power", true);
+					newAppliance.put("synced", false);
+					newAppliance.put("valid", false);
+					newAppliance.put("name", name.getText().toString());
+					newAppliance.put("bluetooth", address.getText().toString());
+					newAppliance.put("user", ParseUser.getCurrentUser());
+					newAppliance.saveInBackground(); // in background?
+
+					try {
+						newAppliance.refresh();
+					} catch (ParseException e) {
+						e.printStackTrace();
+					}
+					// Call loading screen after and await for valid field
+					launchValidateDeviceDialog(newAppliance.getObjectId(), name.getText().toString());
+				}
 			}).setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
-			  public void onClick(DialogInterface dialog, int whichButton) {
-			    // Canceled.
-			  }
+				public void onClick(DialogInterface dialog, int whichButton) {
+					// Canceled.
+				}
 			});
-			
+
 			// 3. Get the AlertDialog from create()
 			AlertDialog dialog = alert.create();
 			dialog.show();
@@ -211,39 +220,28 @@ public class MainActivity extends Activity {
 		return true;
 	}
 
-	public void launchSyncingDialog(final View view, final String objectId, final boolean toOn) {
+	public void launchSyncingDialog(final View view, final String objectId, final boolean toOn, final String name) {
 		final String power = toOn ? "on" : "off";
-		final ProgressDialog progressDialog = ProgressDialog.show(MainActivity.this, "", "Turning " + power + " device...", true);
+		final ProgressDialog progressDialog = ProgressDialog.show(MainActivity.this, "", "Turning " + power + " " + name + "...", true);
 		new Thread(new Runnable() {
 			@Override
 			public void run() {
-				Thread thread = new Thread(new Runnable() {
-					@Override
-					public void run() {
-						ParseQuery<ParseObject> query = ParseQuery.getQuery("ApplianceModel");
-						try {
-							for (int i = 0; i < 10; i++) {
-								ParseObject applianceModel = query.get(objectId);
-								if (applianceModel.getBoolean("synced") == true) {
-									// toggle has been synced with the hub
-									break;
-								}
-								// sleep for .25 seconds
-								Thread.sleep(500);
-							}
-						} catch (Exception e) {
-							e.printStackTrace();
-						}
-						progressDialog.dismiss();
-					}			
-				});
-				thread.start();
+				ParseQuery<ParseObject> query = ParseQuery.getQuery("ApplianceModel");
 				try {
-					thread.join();
-				} catch (InterruptedException e) {
+					for (int i = 0; i < 10; i++) {
+						ParseObject applianceModel = query.get(objectId);
+						if (applianceModel.getBoolean("synced") == true) {
+							// toggle has been synced with the hub
+							break;
+						}
+						// sleep for .25 seconds
+						Thread.sleep(500);
+					}
+				} catch (Exception e) {
 					e.printStackTrace();
 				}
-
+				progressDialog.dismiss();
+				
 				Handler handler = new Handler(Looper.getMainLooper());
 				handler.post(new Runnable() {
 					@Override
@@ -270,7 +268,7 @@ public class MainActivity extends Activity {
 								((Switch) view).toggle();
 								resetToggle = false;
 
-								launchSyncFailureAlert(power);
+								launchSyncFailureAlert(power, name);
 							}
 						} catch (ParseException e) {
 							e.printStackTrace();
@@ -281,12 +279,12 @@ public class MainActivity extends Activity {
 		}).start();
 	}
 
-	public void launchSyncFailureAlert(String power) {
+	public void launchSyncFailureAlert(String power, String name) {
 		AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(MainActivity.this);
 
 		// set dialog message
 		alertDialogBuilder
-		.setMessage("Failed to turn " + power + " device.")
+		.setMessage("Failed to turn " + power + " " + name + ".")
 		.setCancelable(false)
 		.setNegativeButton("OK",new DialogInterface.OnClickListener() {
 			public void onClick(DialogInterface dialog,int id) {
@@ -298,5 +296,65 @@ public class MainActivity extends Activity {
 		AlertDialog alertDialog = alertDialogBuilder.create();
 		alertDialog.show();
 	}
+
+	public void launchValidateDeviceDialog(final String objectId, final String name) {
+		final ProgressDialog progressDialog = ProgressDialog.show(MainActivity.this, "", "Adding " + name + "...", true);
+		Thread thread = new Thread(new Runnable() {
+			@Override
+			public void run() {
+				ParseQuery<ParseObject> query = ParseQuery.getQuery("ApplianceModel");
+				try {
+					for (int i = 0; i < 10; i++) {
+						ParseObject applianceModel = query.get(objectId);
+						if (applianceModel.getBoolean("valid") == true) {
+							// toggle has been synced with the hub
+							break;
+						}
+						// sleep for .25 seconds
+						Thread.sleep(500);
+					}
+					Handler handler = new Handler(Looper.getMainLooper());
+					handler.post(new Runnable() {
+						@Override
+						public void run() {
+							try {
+								ParseQuery<ParseObject> query = ParseQuery.getQuery("ApplianceModel");
+								// if failed to sync
+								ParseObject applianceModel = query.get(objectId);
+								if(!applianceModel.getBoolean("valid")) {				
+									launchInvalidDeviceAlert(name);
+								}
+							} catch (ParseException e) {
+								e.printStackTrace();
+							}
+						}
+					});
+
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+				progressDialog.dismiss();
+			}			
+		});
+		thread.start();
+	}
 	
+	public void launchInvalidDeviceAlert(String name) {
+		AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(MainActivity.this);
+
+		// set dialog message
+		alertDialogBuilder
+		.setMessage("Failed to add " + name + ".")
+		.setCancelable(false)
+		.setNegativeButton("OK",new DialogInterface.OnClickListener() {
+			public void onClick(DialogInterface dialog,int id) {
+				dialog.dismiss();
+			}
+		});
+
+		// create alert dialog
+		AlertDialog alertDialog = alertDialogBuilder.create();
+		alertDialog.show();
+	}
+
 }
