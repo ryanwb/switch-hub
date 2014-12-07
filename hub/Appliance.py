@@ -27,13 +27,17 @@ def parse_response(response):
   return ack
 
 class ApplianceModel(Object):
-  def add(self,sockets):
+  def add(self,sockets,port):
     print "Adding Appliance"
     # TODO Either serial or socket 
     # Open serial ports and add to dictionary
-    #dev_name = "/dev/" + appliance.objectId
+    #dev_name = "/dev/" + self.objectId
     #bluetoothSerial = serial.Serial(dev_name, baudrate=9600)
-    #serialPorts[appliance.objectId] = bluetoothSerial
+    #serialPorts[self.objectId] = bluetoothSerial
+    # Establish socket and add to dictionary
+    #my_socket = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
+    #my_socket.connect((self.bluetooth,port))
+    #sockets[self.objectId] = my_socket
 
   def toggle(self,sockets):
     print "Toggling Appliance"
@@ -57,3 +61,11 @@ class ApplianceModel(Object):
       #self.save()
     else:
       print "Device didn't ACK!!"
+
+  def delete(self,sockets):
+    print "Gonna delete appliance"
+    # If sockets work, we can delete appliances!!
+    #my_socket = sockets[self.objectId)
+    #my_socket.close()
+    #del sockets[self.objectId]
+    # how to delete in Parse?

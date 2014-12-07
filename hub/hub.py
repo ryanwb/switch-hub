@@ -2,6 +2,8 @@ import time
 from parse_rest.connection import register
 from Appliance import ApplianceModel
 
+port_max = 1
+
 def main():
   print "Register to Parse"
   register('kPTnWzHeMI900B83Vee52eXYqQWLrJGUBcc4XuJu', 'FWvTqnNw4IKDIHb70oyzqK0CjH3y3TNW8wvx8ytk',master_key=None)
@@ -23,7 +25,8 @@ def main():
       print "Going to check for new devices!"
       #new_appliances = ApplianceModel.Query.all().filter(active=True).filter(new=True)
       #for appliance in new_appliances:
-        #appliance.add(btSockets)
+        #appliance.add(btSockets,port_max)
+        #port_max += 1
       count = 0
     toggledAppliances = ApplianceModel.Query.all().filter(synced=False)
     for appliance in toggledAppliances:
