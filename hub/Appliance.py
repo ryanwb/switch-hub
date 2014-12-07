@@ -11,13 +11,13 @@ def parse_response(response):
   ack = False
   i = 0
   while i < len(response):
-    if state == 0 and response[i] == "\xFF":
+    if state == 0 and response[i] == '\xFF':
       state = 1
       i += 1
-    elif state == 1 and response[i] == "\xFE":
+    elif state == 1 and response[i] == '\xFE':
       state = 2
       i += 1
-    elif state == 2 and response[i] == "\x00":
+    elif state == 2 and response[i] == '\x01':
       state = 3
       print "Device acked!"
       ack = True
