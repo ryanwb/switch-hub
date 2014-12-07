@@ -20,6 +20,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.View.OnClickListener;
+import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.LinearLayout;
@@ -29,6 +30,7 @@ import android.app.ProgressDialog;
 public class MainActivity extends Activity {
 
 	List<ApplianceModel> appliances = new ArrayList<ApplianceModel>(); 
+	boolean resetToggle = false;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {		
@@ -68,18 +70,22 @@ public class MainActivity extends Activity {
 	            	    		0,ViewGroup.LayoutParams.WRAP_CONTENT,1.0f));
 						
 						layout_row.addView(text_row);
-						Switch toggle = new Switch(MainActivity.this);
+						final Switch toggle = new Switch(MainActivity.this);
 						toggle.setLayoutParams(new LinearLayout.LayoutParams(
 		            	        ViewGroup.LayoutParams.WRAP_CONTENT,
 		            	        ViewGroup.LayoutParams.WRAP_CONTENT));
 						toggle.setChecked(appl.isPower());
 
 						final String objectId = appliance.getObjectId();
+						
 						// add listener to toggle
-						toggle.setOnClickListener(new View.OnClickListener() {
+						toggle.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+							
 							@Override
-							public void onClick(View v) {
-								onToggleClicked(v, objectId);
+							public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+								if (!resetToggle) {
+									onToggleClicked(toggle, objectId);		
+								}
 							}
 						});
 
@@ -179,6 +185,7 @@ public class MainActivity extends Activity {
 					 new_appliance.saveInBackground();
 					 
 					 // Call loading screen after and await for valid field
+					 
 				  }
 			}).setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
 			  public void onClick(DialogInterface dialog, int whichButton) {
@@ -206,7 +213,7 @@ public class MainActivity extends Activity {
 
 	public void launchSyncingDialog(final View view, final String objectId, final boolean toOn) {
 		final String power = toOn ? "on" : "off";
-		final ProgressDialog progressDialog = ProgressDialog.show(MainActivity.this, "", "Turning device " + power + "...", true);
+		final ProgressDialog progressDialog = ProgressDialog.show(MainActivity.this, "", "Turning " + power + " device...", true);
 		new Thread(new Runnable() {
 			@Override
 			public void run() {
@@ -259,7 +266,9 @@ public class MainActivity extends Activity {
 									applianceModel.put("synced", true);
 									applianceModel.saveInBackground();
 								}
+								resetToggle = true;
 								((Switch) view).toggle();
+								resetToggle = false;
 
 								launchSyncFailureAlert(power);
 							}
