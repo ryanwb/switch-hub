@@ -3,7 +3,7 @@
 
 #include "comm.h"
 
-const int device_pin = 7;	// Pin out to switch the AC relay
+const int device_pin = 9;	// Pin out to switch the AC relay
 byte wbuffer[BUFF_LEN];		// Write/output buffer
 State s;					// State of the state machine determining how the Bluetooth byte stream is parsed
 
@@ -18,10 +18,13 @@ void flipOff() {
 }
 
 void sendAck(byte op) {
-	wbuffer[0] = START;
-	wbuffer[1] = OP_ACK;
-	wbuffer[2] = op;
-	Serial.write(wbuffer, 3);
+	// wbuffer[0] = START;
+	// wbuffer[1] = OP_ACK;
+	// wbuffer[2] = op;
+	// Serial.write(wbuffer, 3);
+	// Send a single-byte ack
+	wbuffer[0] = OP_ACK;
+	Serial.write(wbuffer,1);
 }
 
 void setup() {
@@ -49,6 +52,12 @@ void loop()
 	// Listen for data on the serial connection
     if (Serial.available() > 0)
     {
+    	/* State machine logic:
+    	 * 1. AWAIT_START
+    	 * 2. AWAIT_CMD_ID
+    	 * 3. Await optional additional params for command
+    	 */
+    	 
         int x = Serial.read();	// Read one byte
 
         if (x == -1)			// Read error (nothing in input buffer)

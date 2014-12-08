@@ -24,5 +24,3 @@ enum State {
 };
 
 #endif
-
-

@@ -21,4 +21,6 @@ Omar Leyva, and Ryan Baker.
 
 ### server
 
-"server" contains the backend code, processing requests from the Android application and communicating with the hub, authenticating users, etc.
+~~"server" contains the backend code, processing requests from the Android application and communicating with the hub, authenticating users, etc.~~
+
+Parse is used as the backend server for SwitchHub.
