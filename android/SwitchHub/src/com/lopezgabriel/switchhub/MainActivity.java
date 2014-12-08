@@ -42,7 +42,7 @@ public class MainActivity extends Activity {
 		TextView tv = (TextView) findViewById(R.id.logo);
 		tv.setTypeface(tf);
 
-		ParseUser user = ParseUser.getCurrentUser();
+		String user = ParseUser.getCurrentUser().getObjectId();
 
 		// Get list of appliances from Parse.com and place them in ApplianceModel objects
 		ParseQuery<ParseObject> query = ParseQuery.getQuery("ApplianceModel").whereEqualTo("user", user);
@@ -53,10 +53,6 @@ public class MainActivity extends Activity {
 					LinearLayout layout = (LinearLayout) findViewById(R.id.main);
 
 					for(ParseObject appliance : applianceList) {
-						if (!appliance.getBoolean("valid")) {
-							continue; // Don't display if invalid
-						}
-						
 						ApplianceModel appl = new ApplianceModel();
 						appl.setObjectId(appliance.getObjectId());
 						appl.setApplianceName(appliance.getString("name"));
@@ -136,12 +132,12 @@ public class MainActivity extends Activity {
 				// turn on appliance		
 				applianceModel.put("power", true);
 				applianceModel.put("synced", false);
-				applianceModel.saveInBackground();
+				applianceModel.save();
 			}
 			else {
 				applianceModel.put("power", false);
 				applianceModel.put("synced", false);
-				applianceModel.saveInBackground();
+				applianceModel.save();
 			}
 
 			// wait for the hub to sync the toggle
@@ -180,15 +176,16 @@ public class MainActivity extends Activity {
 				public void onClick(DialogInterface dialog, int whichButton) {
 
 					ParseObject newAppliance = new ParseObject("ApplianceModel");
-					newAppliance.put("power", true);
+					newAppliance.put("power", false);
 					newAppliance.put("synced", false);
-					newAppliance.put("valid", false);
+					newAppliance.put("new", true);
 					newAppliance.put("name", name.getText().toString());
 					newAppliance.put("bluetooth", address.getText().toString());
-					newAppliance.put("user", ParseUser.getCurrentUser());
-					newAppliance.saveInBackground(); // in background?
+					newAppliance.put("user", ParseUser.getCurrentUser().getObjectId());
+					newAppliance.put("connected", false);
 
 					try {
+						newAppliance.save();
 						newAppliance.refresh();
 					} catch (ParseException e) {
 						e.printStackTrace();
@@ -228,13 +225,13 @@ public class MainActivity extends Activity {
 			public void run() {
 				ParseQuery<ParseObject> query = ParseQuery.getQuery("ApplianceModel");
 				try {
-					for (int i = 0; i < 10; i++) {
+					for (int i = 0; i < 20; i++) {
 						ParseObject applianceModel = query.get(objectId);
 						if (applianceModel.getBoolean("synced") == true) {
 							// toggle has been synced with the hub
 							break;
 						}
-						// sleep for .25 seconds
+						// sleep for .5 seconds
 						Thread.sleep(500);
 					}
 				} catch (Exception e) {
@@ -257,12 +254,12 @@ public class MainActivity extends Activity {
 									// turn on appliance		
 									applianceModel.put("power", false);
 									applianceModel.put("synced", true);
-									applianceModel.saveInBackground();
+									applianceModel.save();
 								}
 								else {
 									applianceModel.put("power", true);
 									applianceModel.put("synced", true);
-									applianceModel.saveInBackground();
+									applianceModel.save();
 								}
 								resetToggle = true;
 								((Switch) view).toggle();
@@ -304,13 +301,13 @@ public class MainActivity extends Activity {
 			public void run() {
 				ParseQuery<ParseObject> query = ParseQuery.getQuery("ApplianceModel");
 				try {
-					for (int i = 0; i < 10; i++) {
+					for (int i = 0; i < 20; i++) {
 						ParseObject applianceModel = query.get(objectId);
-						if (applianceModel.getBoolean("valid") == true) {
+						if (applianceModel.getBoolean("new") == false) {
 							// toggle has been synced with the hub
 							break;
 						}
-						// sleep for .25 seconds
+						// sleep for .5 seconds
 						Thread.sleep(500);
 					}
 					Handler handler = new Handler(Looper.getMainLooper());
@@ -321,7 +318,7 @@ public class MainActivity extends Activity {
 								ParseQuery<ParseObject> query = ParseQuery.getQuery("ApplianceModel");
 								// if failed to sync
 								ParseObject applianceModel = query.get(objectId);
-								if(!applianceModel.getBoolean("valid")) {				
+								if(applianceModel.getBoolean("new")) {				
 									launchInvalidDeviceAlert(name);
 								}
 							} catch (ParseException e) {
