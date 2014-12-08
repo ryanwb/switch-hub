@@ -19,7 +19,7 @@ class ApplianceModel(Object):
     my_socket = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
     my_socket.connect((self.bluetooth,port))
     sockets[self.objectId] = my_socket
-    return true
+    return True
 
   def toggle(self,sockets):
     print "Toggling Appliance"
