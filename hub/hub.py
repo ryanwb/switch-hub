@@ -1,21 +1,8 @@
 import time
-import serial
-#import bluetooth
 from parse_rest.connection import register
 from Appliance import ApplianceModel
 
-
-def add_appliance():
-  print "Adding Appliance"
-  # TODO Check for new appliances
-  # TODO If any, add them to dictionary
-
-def toggle_appliance(appliance):
-  print "Toggling Appliance"
-  # TODO Send toggle command to bluetooth and parse ACK
-  # TODO If ACKed, sync the appliance
-  appliance.synced = True
-  appliance.save()
+port_max = 1
 
 def main():
   print "Register to Parse"
@@ -26,12 +13,9 @@ def main():
   
   # Connect to appliances
   #serialPorts = {}
-  #btSockets = {}
+  btSockets = {}
   #for appliance in active_appliances:
-    # Open serial ports and add to dictionary
-    #dev_name = "/dev/" + appliance.objectId
-    #bluetoothSerial = serial.Serial(dev_name, baudrate=9600)
-    #serialPorts[appliance.objectId] = bluetoothSerial
+    #add_appliance(appliance,btSockets) 
 
   # Go into main loop
   # This loop checks if new devices are added and if devices need to be toggled
@@ -39,12 +23,15 @@ def main():
   while True:
     if count == 5:
       print "Going to check for new devices!"
-      add_appliance()
+      #new_appliances = ApplianceModel.Query.all().filter(active=True).filter(new=True)
+      #for appliance in new_appliances:
+        #appliance.add(btSockets,port_max)
+        #port_max += 1
       count = 0
     toggledAppliances = ApplianceModel.Query.all().filter(synced=False)
     for appliance in toggledAppliances:
       print appliance.name + " wants to be toggled to " + str(appliance.power)
-      toggle_appliance(appliance)
+      appliance.toggle(btSockets)
     time.sleep(1)
     count += 1 
 
