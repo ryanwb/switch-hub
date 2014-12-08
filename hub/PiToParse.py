@@ -7,33 +7,23 @@ register('kPTnWzHeMI900B83Vee52eXYqQWLrJGUBcc4XuJu', 'FWvTqnNw4IKDIHb70oyzqK0CjH
 
 from parse_rest.datatypes import Object
 
-bluetoothSerial = serial.Serial("/dev/rfcomm2", baudrate=9600)
+bluetoothSerial = serial.Serial("/dev/rfcomm1", baudrate=9600, timeout=1)
 onMsgExample = "\xFF\x01\x01"
 offMsgExample = "\xFF\x01\x00"
 
 class ApplianceModel(Object):
     pass
 
-if __name__ == "__main__":
-    # delete the current rows
-    print "Clearing table..."
-    all_appliances = ApplianceModel.Query.all()
-    for appliance in all_appliances:
-        appliance.delete()
+my_user = "zcpXqHWsbD"
 
-    # populate connected appliances
-    print "Creating appliances..."
-    #TODO: get the list of arduinos connected to the hub
-    appliance1 = ApplianceModel(applianceId=1, power=True, synced=True)
-    appliance1.save()
+if __name__ == "__main__":
 
     # run forever (pulling)
     print "Waiting for a toggle..."
     while True:
-        toggledAppliances = ApplianceModel.Query.all().filter(synced=False)
+        toggledAppliances = ApplianceModel.Query.all().filter(synced=False).filter(user=my_user)
         for appliance in toggledAppliances:
-            print "Appliance " + str(appliance.applianceId) + " was toggled to " + str(appliance.power)
-
+            print "About to Toggle this device"
             #TODO: updated the arduino's status
             if appliance.power == True:
                 print "Sending ON command"
@@ -48,7 +38,6 @@ if __name__ == "__main__":
             # update the database to synced
             appliance.synced=True
             appliance.save()
-            print "Appliance " + str(appliance.applianceId) + " was synced by the hub "
 
         #sleep for a second
         time.sleep(1)
