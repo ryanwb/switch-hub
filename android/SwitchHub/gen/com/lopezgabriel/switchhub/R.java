@@ -58,9 +58,8 @@ public final class R {
         public static final int ic_launcher=0x7f020009;
     }
     public static final class id {
-        public static final int action_add_device=0x7f0a0018;
-        public static final int action_refresh=0x7f0a0017;
-        public static final int action_settings=0x7f0a0016;
+        public static final int action_add_device=0x7f0a0017;
+        public static final int action_refresh=0x7f0a0016;
         public static final int app_logo=0x7f0a0003;
         public static final int create_account=0x7f0a0015;
         public static final int facebook_login=0x7f0a000e;

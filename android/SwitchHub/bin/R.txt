@@ -32,9 +32,8 @@ int drawable com_parse_ui_twitter_login_logo 0x7f020006
 int drawable ic_action_new 0x7f020007
 int drawable ic_action_refresh 0x7f020008
 int drawable ic_launcher 0x7f020009
-int id action_add_device 0x7f0a0018
-int id action_refresh 0x7f0a0017
-int id action_settings 0x7f0a0016
+int id action_add_device 0x7f0a0017
+int id action_refresh 0x7f0a0016
 int id app_logo 0x7f0a0003
 int id create_account 0x7f0a0015
 int id facebook_login 0x7f0a000e

@@ -3,8 +3,6 @@ package com.lopezgabriel.switchhub;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.parse.*;
-
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -13,26 +11,27 @@ import android.content.Intent;
 import android.graphics.Typeface;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.View.OnClickListener;
-import android.view.ViewGroup.LayoutParams;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.EditText;
-import android.widget.TextView;
 import android.widget.LinearLayout;
 import android.widget.Switch;
-import android.app.ProgressDialog;
+import android.widget.TextView;
+
+import com.parse.FindCallback;
+import com.parse.ParseException;
+import com.parse.ParseObject;
+import com.parse.ParseQuery;
+import com.parse.ParseUser;
 
 public class MainActivity extends Activity {
 
-	List<ApplianceModel> appliances = new ArrayList<ApplianceModel>(); 
-	boolean resetToggle = false;
+	List<ApplianceModel> appliances = new ArrayList<ApplianceModel>();
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {		
@@ -82,12 +81,8 @@ public class MainActivity extends Activity {
 
 								final EditText name = new EditText(MainActivity.this);
 								name.setHint(appl.getApplianceName());
+								name.setPadding(20, 40, 10, 40);
 								layout.addView(name);
-								
-								Button bt = new Button(MainActivity.this);
-								bt.setText("Delete?");
-								bt.setLayoutParams(new LayoutParams(LayoutParams.WRAP_CONTENT,LayoutParams.WRAP_CONTENT));
-								layout.addView(bt);
 								
 								alert.setView(layout)
 								.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
@@ -99,24 +94,14 @@ public class MainActivity extends Activity {
 											recreate();
 										}
 									}
-								}).setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+								}).setNegativeButton("Delete?", new DialogInterface.OnClickListener() {
 									public void onClick(DialogInterface dialog, int whichButton) {
-										// Canceled.
-									}
-								});
-
-								// 3. Get the AlertDialog from create()
-								final AlertDialog dialog = alert.create();
-								bt.setOnClickListener(new View.OnClickListener() {
-						            @Override
-						            public void onClick(View v) {
-						            	new AlertDialog.Builder(MainActivity.this)
+										new AlertDialog.Builder(MainActivity.this)
 						                .setTitle("Delete Appliance")
 						                .setMessage("Are you sure you want to delete " + appl.getApplianceName() + "?")
 						                .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
 						                    public void onClick(DialogInterface delete, int which) { 
 						                        appliance.deleteInBackground();
-						                        dialog.dismiss();
 						                        recreate();
 						                    }
 						                 })
@@ -127,8 +112,10 @@ public class MainActivity extends Activity {
 						                 })
 						                .setIcon(android.R.drawable.ic_dialog_alert)
 						                 .show();
-						                }
-						        });
+									}
+								});
+								
+								final AlertDialog dialog = alert.create();
 								dialog.show();
 
 						    }
@@ -148,7 +135,7 @@ public class MainActivity extends Activity {
 
 								@Override
 								public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-									if (!resetToggle) {
+									if (!SwitchHubDialogs.resetToggle) {
 										onToggleClicked(toggle, objectId);		
 									}
 								}
@@ -162,7 +149,7 @@ public class MainActivity extends Activity {
 							retryConnection.setOnClickListener(new OnClickListener() {
 								@Override
 								public void onClick(View v) {
-									launchTryToConnect(objectId, name);
+									SwitchHubDialogs.launchTryToConnect(MainActivity.this, objectId, name);
 								}
 							});
 							retryConnection.setText("connect");
@@ -219,7 +206,7 @@ public class MainActivity extends Activity {
 			}
 
 			// wait for the hub to sync the toggle
-			launchSyncingDialog(view, objectId, toOn, applianceModel.getString("name"));	
+			SwitchHubDialogs.launchSyncingDialog(MainActivity.this, view, objectId, toOn, applianceModel.getString("name"));	
 
 		} catch (ParseException e) {
 			e.printStackTrace();
@@ -232,19 +219,20 @@ public class MainActivity extends Activity {
 		case R.id.action_refresh:
 			recreate();
 			break;
-		case R.id.action_settings:
-			// do something?
-			break;
 		case R.id.action_add_device:		
 			LinearLayout layout = new LinearLayout(this);
 			layout.setOrientation(LinearLayout.VERTICAL);
 
 			final EditText name = new EditText(this);
 			name.setHint("Appliance Name");
+
+			name.setPadding(20, 40, 10, 40);
 			layout.addView(name);
 
 			final EditText address = new EditText(this);
 			address.setHint("Bluetooth Address");
+			
+			address.setPadding(20, 40, 10, 40);
 			layout.addView(address);
 
 			AlertDialog.Builder alert = new AlertDialog.Builder(this)
@@ -269,7 +257,7 @@ public class MainActivity extends Activity {
 						e.printStackTrace();
 					}
 					// Call loading screen after and await for valid field
-					launchValidateDeviceDialog(newAppliance.getObjectId(), name.getText().toString());
+					SwitchHubDialogs.launchValidateDeviceDialog(MainActivity.this,newAppliance.getObjectId(), name.getText().toString());
 				}
 			}).setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
 				public void onClick(DialogInterface dialog, int whichButton) {
@@ -298,216 +286,5 @@ public class MainActivity extends Activity {
 		setTitle(title + "'s Hub");
 		return true;
 	}
-
-	public void launchSyncingDialog(final View view, final String objectId, final boolean toOn, final String name) {
-		final String power = toOn ? "on" : "off";
-		final ProgressDialog progressDialog = ProgressDialog.show(MainActivity.this, "", "Turning " + power + " " + name + "...", true);
-		new Thread(new Runnable() {
-			@Override
-			public void run() {
-				ParseQuery<ParseObject> query = ParseQuery.getQuery("ApplianceModel");
-				try {
-					for (int i = 0; i < 20; i++) {
-						ParseObject applianceModel = query.get(objectId);
-						if (applianceModel.getBoolean("synced") == true) {
-							// toggle has been synced with the hub
-							break;
-						}
-						// sleep for .5 seconds
-						Thread.sleep(500);
-					}
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-				progressDialog.dismiss();
-
-				Handler handler = new Handler(Looper.getMainLooper());
-				handler.post(new Runnable() {
-					@Override
-					public void run() {
-						try {
-							ParseQuery<ParseObject> query = ParseQuery.getQuery("ApplianceModel");
-							// if failed to sync
-							ParseObject applianceModel = query.get(objectId);
-							if(!applianceModel.getBoolean("synced")) {				
-								applianceModel = query.get(objectId);
-								// reset toggle
-								if (toOn) {
-									// turn on appliance		
-									applianceModel.put("power", false);
-									applianceModel.put("synced", true);
-									applianceModel.save();
-								}
-								else {
-									applianceModel.put("power", true);
-									applianceModel.put("synced", true);
-									applianceModel.save();
-								}
-								resetToggle = true;
-								((Switch) view).toggle();
-								resetToggle = false;
-
-								launchSyncFailureAlert(power, name);
-							}
-						} catch (ParseException e) {
-							e.printStackTrace();
-						}
-					}
-				});
-			}
-		}).start();
-	}
-
-	public void launchSyncFailureAlert(String power, String name) {
-		AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(MainActivity.this);
-
-		// set dialog message
-		alertDialogBuilder
-		.setMessage("Failed to turn " + power + " " + name + ".")
-		.setCancelable(false)
-		.setNegativeButton("OK",new DialogInterface.OnClickListener() {
-			public void onClick(DialogInterface dialog,int id) {
-				dialog.dismiss();
-			}
-		});
-
-		// create alert dialog
-		AlertDialog alertDialog = alertDialogBuilder.create();
-		alertDialog.show();
-	}
-
-	public void launchValidateDeviceDialog(final String objectId, final String name) {
-		final ProgressDialog progressDialog = ProgressDialog.show(MainActivity.this, "", "Adding " + name + "...", true);
-		Thread thread = new Thread(new Runnable() {
-			@Override
-			public void run() {
-				ParseQuery<ParseObject> query = ParseQuery.getQuery("ApplianceModel");
-				try {
-					for (int i = 0; i < 20; i++) {
-						ParseObject applianceModel = query.get(objectId);
-						if (applianceModel.getBoolean("new") == false) {
-							// toggle has been synced with the hub
-							break;
-						}
-						// sleep for .5 seconds
-						Thread.sleep(500);
-					}
-					Handler handler = new Handler(Looper.getMainLooper());
-					handler.post(new Runnable() {
-						@Override
-						public void run() {
-							try {
-								ParseQuery<ParseObject> query = ParseQuery.getQuery("ApplianceModel");
-								// if failed to sync
-								ParseObject applianceModel = query.get(objectId);
-								if(applianceModel.getBoolean("new")) {				
-									launchInvalidDeviceAlert(name);
-									applianceModel.deleteInBackground();									
-								}
-								MainActivity.this.recreate();
-
-							} catch (ParseException e) {
-								e.printStackTrace();
-							}
-						}
-					});
-
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-				progressDialog.dismiss();
-			}			
-		});
-		thread.start();
-	}
-
-	public void launchInvalidDeviceAlert(String name) {
-		AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(MainActivity.this);
-
-		// set dialog message
-		alertDialogBuilder
-		.setMessage("Failed to add " + name + ".")
-		.setCancelable(false)
-		.setNegativeButton("OK",new DialogInterface.OnClickListener() {
-			public void onClick(DialogInterface dialog,int id) {
-				dialog.dismiss();
-			}
-		});
-
-		// create alert dialog
-		AlertDialog alertDialog = alertDialogBuilder.create();
-		alertDialog.show();
-	}
-	
-	public void launchTryToConnect(final String objectId, final String name) {
-		ParseQuery<ParseObject> query = ParseQuery.getQuery("ApplianceModel");
-		try {
-			ParseObject applianceModel = query.get(objectId);
-			applianceModel.put("new", true);
-			applianceModel.save();
-		} catch (ParseException e1) {
-			e1.printStackTrace();
-		}
-		
-		final ProgressDialog progressDialog = ProgressDialog.show(MainActivity.this, "", "Connecting " + name + "...", true);
-		new Thread(new Runnable() {
-			@Override
-			public void run() {
-				ParseQuery<ParseObject> query = ParseQuery.getQuery("ApplianceModel");
-				try {
-					for (int i = 0; i < 20; i++) {
-						ParseObject applianceModel = query.get(objectId);
-						if (applianceModel.getBoolean("connected") == true) {
-							break;
-						}
-						// sleep for .5 seconds
-						Thread.sleep(500);
-					}
-					Handler handler = new Handler(Looper.getMainLooper());
-					handler.post(new Runnable() {
-						@Override
-						public void run() {
-							try {
-								ParseQuery<ParseObject> query = ParseQuery.getQuery("ApplianceModel");
-								// if failed to sync
-								ParseObject applianceModel = query.get(objectId);
-								if(!applianceModel.getBoolean("connected")) {
-									launchFailedToConnectAlert(name);
-								} else {
-									MainActivity.this.recreate();
-								}
-								applianceModel.put("new", false); // needed?
-								applianceModel.save();
-							} catch (ParseException e) {
-								e.printStackTrace();
-							}
-						}
-					});
-
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-				progressDialog.dismiss();
-			}
-		}).start();
-	}
-	
-	public void launchFailedToConnectAlert(String name) {
-		AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(MainActivity.this);
-
-		// set dialog message
-		alertDialogBuilder
-		.setMessage("Failed to connect " + name + ".")
-		.setCancelable(false)
-		.setNegativeButton("OK",new DialogInterface.OnClickListener() {
-			public void onClick(DialogInterface dialog,int id) {
-				dialog.dismiss();
-			}
-		});
-
-		// create alert dialog
-		AlertDialog alertDialog = alertDialogBuilder.create();
-		alertDialog.show();
-	}
-
 }
+
