@@ -228,4 +228,22 @@ public class SwitchHubDialogs {
 		alertDialog.show();
 	}
 
+	public static void launchNotConnectedAlert(MainActivity activity, String name) {
+		AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(activity);
+
+		// set dialog message
+		alertDialogBuilder
+		.setMessage(name + " is no longer connected. Please make sure it's connected to the hub.")
+		.setCancelable(false)
+		.setNegativeButton("OK",new DialogInterface.OnClickListener() {
+			public void onClick(DialogInterface dialog,int id) {
+				dialog.dismiss();
+			}
+		});
+
+		// create alert dialog
+		AlertDialog alertDialog = alertDialogBuilder.create();
+		alertDialog.show();
+	}
+
 }

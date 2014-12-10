@@ -71,19 +71,19 @@ public class MainActivity extends Activity {
 								0,ViewGroup.LayoutParams.MATCH_PARENT,1.0f));
 						text_row.setTextSize(20);
 						text_row.setOnClickListener(new OnClickListener() {
-						    @Override
-						    public void onClick(View v) {
+							@Override
+							public void onClick(View v) {
 								AlertDialog.Builder alert = new AlertDialog.Builder(MainActivity.this);
 								alert.setTitle("Edit Name");
 
-						    	LinearLayout layout = new LinearLayout(MainActivity.this);
+								LinearLayout layout = new LinearLayout(MainActivity.this);
 								layout.setOrientation(LinearLayout.VERTICAL);
 
 								final EditText name = new EditText(MainActivity.this);
 								name.setHint(appl.getApplianceName());
 								name.setPadding(20, 40, 10, 40);
 								layout.addView(name);
-								
+
 								alert.setView(layout)
 								.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
 									public void onClick(DialogInterface dialog, int whichButton) {
@@ -97,31 +97,31 @@ public class MainActivity extends Activity {
 								}).setNegativeButton("Delete?", new DialogInterface.OnClickListener() {
 									public void onClick(DialogInterface dialog, int whichButton) {
 										new AlertDialog.Builder(MainActivity.this)
-						                .setTitle("Delete Appliance")
-						                .setMessage("Are you sure you want to delete " + appl.getApplianceName() + "?")
-						                .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
-						                    public void onClick(DialogInterface delete, int which) { 
-						                        appliance.deleteInBackground();
-						                        recreate();
-						                    }
-						                 })
-						                .setNegativeButton(android.R.string.no, new DialogInterface.OnClickListener() {
-						                    public void onClick(DialogInterface delete, int which) { 
-						                        // do nothing
-						                    }
-						                 })
-						                .setIcon(android.R.drawable.ic_dialog_alert)
-						                 .show();
+										.setTitle("Delete Appliance")
+										.setMessage("Are you sure you want to delete " + appl.getApplianceName() + "?")
+										.setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+											public void onClick(DialogInterface delete, int which) { 
+												appliance.deleteInBackground();
+												recreate();
+											}
+										})
+										.setNegativeButton(android.R.string.no, new DialogInterface.OnClickListener() {
+											public void onClick(DialogInterface delete, int which) { 
+												// do nothing
+											}
+										})
+										.setIcon(android.R.drawable.ic_dialog_alert)
+										.show();
 									}
 								});
-								
+
 								final AlertDialog dialog = alert.create();
 								dialog.show();
 
-						    }
+							}
 						});
 						layout_row.addView(text_row);
-						
+
 						final String objectId = appliance.getObjectId();
 						final String name = appliance.getString("name");
 						if (appliance.getBoolean("connected")) {
@@ -193,20 +193,24 @@ public class MainActivity extends Activity {
 			ParseQuery<ParseObject> query = ParseQuery.getQuery("ApplianceModel").whereEqualTo("user", user);
 			// retrieve the object by id
 			ParseObject applianceModel = query.get(objectId);
-			if (toOn) {
-				// turn on appliance		
-				applianceModel.put("power", true);
-				applianceModel.put("synced", false);
-				applianceModel.save();
+			if (applianceModel.getBoolean("connected")) {
+				if (toOn) {
+					// turn on appliance		
+					applianceModel.put("power", true);
+					applianceModel.put("synced", false);
+					applianceModel.save();
+				}
+				else {
+					applianceModel.put("power", false);
+					applianceModel.put("synced", false);
+					applianceModel.save();
+				}
+				// wait for the hub to sync the toggle
+				SwitchHubDialogs.launchSyncingDialog(MainActivity.this, view, objectId, toOn, applianceModel.getString("name"));	
+			} else {
+				SwitchHubDialogs.launchNotConnectedAlert(MainActivity.this, applianceModel.getString("name"));
+				recreate();
 			}
-			else {
-				applianceModel.put("power", false);
-				applianceModel.put("synced", false);
-				applianceModel.save();
-			}
-
-			// wait for the hub to sync the toggle
-			SwitchHubDialogs.launchSyncingDialog(MainActivity.this, view, objectId, toOn, applianceModel.getString("name"));	
 
 		} catch (ParseException e) {
 			e.printStackTrace();
@@ -231,7 +235,7 @@ public class MainActivity extends Activity {
 
 			final EditText address = new EditText(this);
 			address.setHint("Bluetooth Address");
-			
+
 			address.setPadding(20, 40, 10, 40);
 			layout.addView(address);
 
@@ -282,7 +286,7 @@ public class MainActivity extends Activity {
 		getMenuInflater().inflate(R.menu.main, menu);
 
 		String title = ParseUser.getCurrentUser().getString("name");
-		
+
 		setTitle(title + "'s Hub");
 		return true;
 	}
