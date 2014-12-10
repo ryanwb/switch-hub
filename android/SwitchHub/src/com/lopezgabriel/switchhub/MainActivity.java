@@ -20,6 +20,8 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.View.OnClickListener;
+import android.view.ViewGroup.LayoutParams;
+import android.widget.Button;
 import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -52,8 +54,8 @@ public class MainActivity extends Activity {
 				if (e == null) {
 					LinearLayout layout = (LinearLayout) findViewById(R.id.main);
 
-					for(ParseObject appliance : applianceList) {
-						ApplianceModel appl = new ApplianceModel();
+					for(final ParseObject appliance : applianceList) {
+						final ApplianceModel appl = new ApplianceModel();
 						appl.setObjectId(appliance.getObjectId());
 						appl.setApplianceName(appliance.getString("name"));
 						appl.setPower(appliance.getBoolean("power"));
@@ -63,11 +65,74 @@ public class MainActivity extends Activity {
 
 						// Create views for the fetched appliances
 						LinearLayout layout_row = new LinearLayout(MainActivity.this);
-
+						layout_row.setPadding(50, 50, 50, 50);
 						TextView text_row = new TextView(MainActivity.this);
-						text_row.setText(appl.getApplianceName() + " ");
+						text_row.setText(appl.getApplianceName());
 						text_row.setLayoutParams(new LinearLayout.LayoutParams(
-								0,ViewGroup.LayoutParams.WRAP_CONTENT,1.0f));
+								0,ViewGroup.LayoutParams.MATCH_PARENT,1.0f));
+						text_row.setTextSize(20);
+						text_row.setOnClickListener(new OnClickListener() {
+						    @Override
+						    public void onClick(View v) {
+								AlertDialog.Builder alert = new AlertDialog.Builder(MainActivity.this);
+								alert.setTitle("Edit Name");
+
+						    	LinearLayout layout = new LinearLayout(MainActivity.this);
+								layout.setOrientation(LinearLayout.VERTICAL);
+
+								final EditText name = new EditText(MainActivity.this);
+								name.setHint(appl.getApplianceName());
+								layout.addView(name);
+								
+								Button bt = new Button(MainActivity.this);
+								bt.setText("Delete?");
+								bt.setLayoutParams(new LayoutParams(LayoutParams.WRAP_CONTENT,LayoutParams.WRAP_CONTENT));
+								layout.addView(bt);
+								
+								alert.setView(layout)
+								.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+									public void onClick(DialogInterface dialog, int whichButton) {
+										if(!name.getText().toString().equals("")) {
+											System.out.println(name.getText().toString());
+											appliance.put("name", name.getText().toString());
+											appliance.saveInBackground();
+											recreate();
+										}
+									}
+								}).setNegativeButton("Cancel", new DialogInterface.OnClickListener() {
+									public void onClick(DialogInterface dialog, int whichButton) {
+										// Canceled.
+									}
+								});
+
+								// 3. Get the AlertDialog from create()
+								final AlertDialog dialog = alert.create();
+								bt.setOnClickListener(new View.OnClickListener() {
+						            @Override
+						            public void onClick(View v) {
+						            	new AlertDialog.Builder(MainActivity.this)
+						                .setTitle("Delete Appliance")
+						                .setMessage("Are you sure you want to delete " + appl.getApplianceName() + "?")
+						                .setPositiveButton(android.R.string.yes, new DialogInterface.OnClickListener() {
+						                    public void onClick(DialogInterface delete, int which) { 
+						                        appliance.deleteInBackground();
+						                        dialog.dismiss();
+						                        recreate();
+						                    }
+						                 })
+						                .setNegativeButton(android.R.string.no, new DialogInterface.OnClickListener() {
+						                    public void onClick(DialogInterface delete, int which) { 
+						                        // do nothing
+						                    }
+						                 })
+						                .setIcon(android.R.drawable.ic_dialog_alert)
+						                 .show();
+						                }
+						        });
+								dialog.show();
+
+						    }
+						});
 
 						layout_row.addView(text_row);
 						final Switch toggle = new Switch(MainActivity.this);
@@ -214,6 +279,10 @@ public class MainActivity extends Activity {
 	public boolean onCreateOptionsMenu(Menu menu) {
 		// Inflate the menu; this adds items to the action bar if it is present.
 		getMenuInflater().inflate(R.menu.main, menu);
+
+		String title = ParseUser.getCurrentUser().getString("name");
+		
+		setTitle(title + "'s Hub");
 		return true;
 	}
 
@@ -320,7 +389,10 @@ public class MainActivity extends Activity {
 								ParseObject applianceModel = query.get(objectId);
 								if(applianceModel.getBoolean("new")) {				
 									launchInvalidDeviceAlert(name);
+									applianceModel.deleteInBackground();									
 								}
+								MainActivity.this.recreate();
+
 							} catch (ParseException e) {
 								e.printStackTrace();
 							}
