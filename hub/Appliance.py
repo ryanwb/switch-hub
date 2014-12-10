@@ -1,4 +1,3 @@
-import serial
 import bluetooth
 from parse_rest.datatypes import Object
 
