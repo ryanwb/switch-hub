@@ -133,28 +133,41 @@ public class MainActivity extends Activity {
 
 						    }
 						});
-
 						layout_row.addView(text_row);
-						final Switch toggle = new Switch(MainActivity.this);
-						toggle.setLayoutParams(new LinearLayout.LayoutParams(
-								ViewGroup.LayoutParams.WRAP_CONTENT,
-								ViewGroup.LayoutParams.WRAP_CONTENT));
-						toggle.setChecked(appl.isPower());
-
+						
 						final String objectId = appliance.getObjectId();
+						final String name = appliance.getString("name");
+						if (appliance.getBoolean("connected")) {
+							final Switch toggle = new Switch(MainActivity.this);
+							toggle.setLayoutParams(new LinearLayout.LayoutParams(
+									ViewGroup.LayoutParams.WRAP_CONTENT,
+									ViewGroup.LayoutParams.WRAP_CONTENT));
+							toggle.setChecked(appl.isPower());
+							// add listener to toggle
+							toggle.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
 
-						// add listener to toggle
-						toggle.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-
-							@Override
-							public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-								if (!resetToggle) {
-									onToggleClicked(toggle, objectId);		
+								@Override
+								public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+									if (!resetToggle) {
+										onToggleClicked(toggle, objectId);		
+									}
 								}
-							}
-						});
-
-						layout_row.addView(toggle);
+							});
+							layout_row.addView(toggle);
+						} else {
+							final Button retryConnection = new Button(MainActivity.this);
+							retryConnection.setLayoutParams(new LinearLayout.LayoutParams(
+									ViewGroup.LayoutParams.WRAP_CONTENT,
+									ViewGroup.LayoutParams.WRAP_CONTENT));
+							retryConnection.setOnClickListener(new OnClickListener() {
+								@Override
+								public void onClick(View v) {
+									launchTryToConnect(objectId, name);
+								}
+							});
+							retryConnection.setText("connect");
+							layout_row.addView(retryConnection);
+						}
 						layout.addView(layout_row);                 	
 					}
 				} else {
@@ -307,7 +320,7 @@ public class MainActivity extends Activity {
 					e.printStackTrace();
 				}
 				progressDialog.dismiss();
-				
+
 				Handler handler = new Handler(Looper.getMainLooper());
 				handler.post(new Runnable() {
 					@Override
@@ -407,13 +420,84 @@ public class MainActivity extends Activity {
 		});
 		thread.start();
 	}
-	
+
 	public void launchInvalidDeviceAlert(String name) {
 		AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(MainActivity.this);
 
 		// set dialog message
 		alertDialogBuilder
 		.setMessage("Failed to add " + name + ".")
+		.setCancelable(false)
+		.setNegativeButton("OK",new DialogInterface.OnClickListener() {
+			public void onClick(DialogInterface dialog,int id) {
+				dialog.dismiss();
+			}
+		});
+
+		// create alert dialog
+		AlertDialog alertDialog = alertDialogBuilder.create();
+		alertDialog.show();
+	}
+	
+	public void launchTryToConnect(final String objectId, final String name) {
+		ParseQuery<ParseObject> query = ParseQuery.getQuery("ApplianceModel");
+		try {
+			ParseObject applianceModel = query.get(objectId);
+			applianceModel.put("new", true);
+			applianceModel.save();
+		} catch (ParseException e1) {
+			e1.printStackTrace();
+		}
+		
+		final ProgressDialog progressDialog = ProgressDialog.show(MainActivity.this, "", "Connecting " + name + "...", true);
+		new Thread(new Runnable() {
+			@Override
+			public void run() {
+				ParseQuery<ParseObject> query = ParseQuery.getQuery("ApplianceModel");
+				try {
+					for (int i = 0; i < 20; i++) {
+						ParseObject applianceModel = query.get(objectId);
+						if (applianceModel.getBoolean("connected") == true) {
+							break;
+						}
+						// sleep for .5 seconds
+						Thread.sleep(500);
+					}
+					Handler handler = new Handler(Looper.getMainLooper());
+					handler.post(new Runnable() {
+						@Override
+						public void run() {
+							try {
+								ParseQuery<ParseObject> query = ParseQuery.getQuery("ApplianceModel");
+								// if failed to sync
+								ParseObject applianceModel = query.get(objectId);
+								if(!applianceModel.getBoolean("connected")) {
+									launchFailedToConnectAlert(name);
+								} else {
+									MainActivity.this.recreate();
+								}
+								applianceModel.put("new", false); // needed?
+								applianceModel.save();
+							} catch (ParseException e) {
+								e.printStackTrace();
+							}
+						}
+					});
+
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+				progressDialog.dismiss();
+			}
+		}).start();
+	}
+	
+	public void launchFailedToConnectAlert(String name) {
+		AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(MainActivity.this);
+
+		// set dialog message
+		alertDialogBuilder
+		.setMessage("Failed to connect " + name + ".")
 		.setCancelable(false)
 		.setNegativeButton("OK",new DialogInterface.OnClickListener() {
 			public void onClick(DialogInterface dialog,int id) {

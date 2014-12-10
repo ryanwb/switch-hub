@@ -37,24 +37,39 @@ def main():
       new_appliances = ApplianceModel.Query.filter(new=True).filter(user=my_user)
       for appliance in new_appliances:
         connected = appliance.connect(btSockets,port_max)
-	if connected == True:
+        if connected == True:
           print "Added" + appliance.name
-	  appliance.connected = True
-	  appliance.new = False
-	else:
-	  appliance.connected = False
-	appliance.save()
-      count = 0
-    #TODO loop on dictionary and use .get() instead
-    toggledAppliances = ApplianceModel.Query.filter(synced=False).filter(user=my_user).filter(new=False)
-    for appliance in toggledAppliances:
-      print appliance.name + " wants to be toggled to " + str(appliance.power)
-      acked = appliance.toggle(btSockets)
-      if acked == True:
-        appliance.synced = True
+          appliance.connected = True
+          appliance.new = False
+        else:
+          appliance.connected = False
         appliance.save()
+      count = 0
+    # Loop on dictionary to find unsynced appliances
+    for key in btSockets:
+      try:
+        appliance = ApplianceModel.get(objectId=key)
+      except Exception as e:
+        # Can return two exceptions but *should* only be one
+        my_socket = btSockets[key]
+        my_socket.close()
+        del btSockets[key]
+        continue
+      # TODO check for empty appliance
+      if appliance.synced == False:
+        print appliance.name + " wants to be toggled to " + str(appliance.power)
+        acked = appliance.toggle(btSockets)
+        if acked == True:
+          appliance.synced = True
+          appliance.save()
     time.sleep(.25)
     count += 1 
 
 if __name__ == "__main__":
-  main()
+  try:
+    main()
+  except KeyboardInterrupt:
+    print "Keyboard Interrupt...bye..."
+  except Exception as e:
+    print e.__doc__
+    print e.message
