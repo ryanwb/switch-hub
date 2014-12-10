@@ -47,7 +47,14 @@ def main():
       count = 0
     # Loop on dictionary to find unsynced appliances
     for key in btSockets:
-      appliance = ApplianceModel.get(objectId=key)
+      try:
+        appliance = ApplianceModel.get(objectId=key)
+      except Exception as e:
+        # Can return two exceptions but *should* only be one
+        my_socket = btSockets[key]
+        my_socket.close()
+        del btSockets[key]
+        continue
       # TODO check for empty appliance
       if appliance.synced == False:
         print appliance.name + " wants to be toggled to " + str(appliance.power)
@@ -59,4 +66,10 @@ def main():
     count += 1 
 
 if __name__ == "__main__":
-  main()
+  try:
+    main()
+  except KeyboardInterrupt:
+    print "Keyboard Interrupt...bye..."
+  except Exception as e:
+    print e.__doc__
+    print e.message
