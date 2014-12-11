@@ -8,4 +8,8 @@
     <string name="logo">SwitchHub</string>
     <string name="add_device">New Appliance</string>
     <string name="profile_logout_button_label">Log out</string>
+    <string name="title_activity_schedule">ScheduleActivity</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="schedule">Schedule A Task</string>
+
 </resources>

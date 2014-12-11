@@ -163,7 +163,6 @@ public class MainActivity extends Activity {
 			}
 		});
 
-
 		findViewById(R.id.logout_button).setOnClickListener(new OnClickListener() {
 			@TargetApi(Build.VERSION_CODES.HONEYCOMB)
 			@Override
