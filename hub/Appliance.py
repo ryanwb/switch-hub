@@ -16,7 +16,11 @@ class ApplianceModel(Object):
     print "Adding Appliance"
     # Establish socket and add to dictionary
     my_socket = bluetooth.BluetoothSocket(bluetooth.RFCOMM)
-    my_socket.connect((self.bluetooth,port))
+    try:
+      my_socket.connect((self.bluetooth,port))
+    except Exception as e:
+      print "Caught Exception while trying to connect!"
+      return False
     sockets[self.objectId] = my_socket
     return True
 
@@ -27,13 +31,28 @@ class ApplianceModel(Object):
     if self.power == True:
       # Toggle device ON
       print "Sending ON"
-      my_socket.send(onMsg)
+      try:
+        my_socket.send(onMsg)
+      except Exception as e:
+        print "Caught Exception while sending!"
+        self.connected = False
+        return False
     else:
       # Toggle device OFF
       print "Sending OFF"
-      my_socket.send(offMsg)
+      try:
+        my_socket.send(offMsg)
+      except Exception as e:
+        print "Caught Exception while sending!"
+        self.connected = False
+        return False
     # Parse response
-    response = my_socket.recv(256)
+    try:
+      response = my_socket.recv(256)
+    except Exception as e:
+      print "Caught Exception while recieving!"
+      self.connected = False
+      return False
     ack = parse_response(response)
     return ack
 

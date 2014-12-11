@@ -1,4 +1,6 @@
 import time
+import sys
+import os
 from datetime import datetime
 from parse_rest.connection import register
 from Appliance import ApplianceModel
@@ -34,86 +36,61 @@ def main():
   count = 0
   while True:
 
-    if count % 4 == 0:
+    if count == 4:
       print "Going to check for new devices!"
       new_appliances = ApplianceModel.Query.filter(new=True).filter(user=my_user)
       for appliance in new_appliances:
         connected = appliance.connect(btSockets,port_max)
         if connected == True:
-          print "Added" + appliance.name
+          print "Added " + appliance.name
           appliance.connected = True
+          acked = appliance.toggle(btSockets)
+          if acked == True:
+            appliance.synced = True
+          else:
+            appliance.sycned = False
           appliance.new = False
         else:
           appliance.connected = False
         appliance.save()
-      # count = 0	# Remove this if we implement the timer code below
-
-    if count % 20 == 0:
-    	print "Going to check for timers!"
-    	current_time = datetime.now().time()
-    	for key in btSockets:
-    		try:
-    			appliance = ApplianceModel.get(objectId=key)
-    		except Exception as e:
-    			my_socket = btSockets[key]
-    			my_soclet.cose()
-    			del btSockets[key]
-    			continue
-    		# TODO check for empty appliance?
-    		if appliance.timerEnabled == True:
-				# example time string in parse = '10:33:26'
-				FORMAT = '%H:%M:%S' # TODO: const, put this elsewhere
-
-				#delta_t_on = current_time - datetime.strptime(appliance.timerOn, FMT)
-				#delta_t_off = current_time - datetime.strptime(appliance.timerOff, FMT)
-
-				delta_t_on = current_time - datetime.strptime("14:40:00", FMT)
-				delta_t_off = current_time - datetime.strptime("14:41:00", FMT)
-
-				# TODO better way to do this? will send the toggle a couple times within this 30 sec window
-				# also, on and off being close together will mess things up
-				should_toggle = false
-				if delta_t_on.seconds < 30:
-					should_toggle = True
-					appliance.power = True
-				if delta_t_off.seconds < 30:
-					should_toggle = True
-					appliance.power = False
-				if should_toggle:
-					acked = appliance.toggle(btSockets)
-        			if acked == True:
-          				appliance.synced = True
-          				appliance.save()
-          			else:  # Failed, so let the regular toggle procedure take care of it
-          				appliance.synced = False
-          				appliance.save()
-		count = 0
+      count = 0	# Remove this if we implement the timer code below
 
     # Loop on dictionary to find unsynced appliances
+    del_list = []
     for key in btSockets:
       try:
-        appliance = ApplianceModel.get(objectId=key)
+        appliance = ApplianceModel.Query.get(objectId=key)
       except Exception as e:
         # Can return two exceptions but *should* only be one
+        print e.message
         my_socket = btSockets[key]
         my_socket.close()
-        del btSockets[key]
+        del_list.append(key)
         continue
       # TODO check for empty appliance
-      if appliance.synced == False:
+      if appliance.synced == False and appliance.connected == True:
         print appliance.name + " wants to be toggled to " + str(appliance.power)
         acked = appliance.toggle(btSockets)
         if acked == True:
           appliance.synced = True
-          appliance.save()
+        appliance.save()
+    for key in del_list:
+      del btSockets[key]
+      print "deleted " + key
     time.sleep(.25)
     count += 1 
 
 if __name__ == "__main__":
-  try:
-    main()
-  except KeyboardInterrupt:
-    print "Keyboard Interrupt...bye..."
-  except Exception as e:
-    print e.__doc__
-    print e.message
+  while True:
+    try:
+      main()
+    except KeyboardInterrupt:
+      print "Keyboard Interrupt...bye..."
+      try:
+        sys.exit(0)
+      except SystemExit:
+        os._exit(0)
+    except Exception as e:
+      print "Caught exception in main!!!"
+      print e.__doc__
+      print e.message
