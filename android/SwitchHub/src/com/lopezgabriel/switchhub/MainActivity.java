@@ -34,7 +34,7 @@ public class MainActivity extends Activity {
 	List<ApplianceModel> appliances = new ArrayList<ApplianceModel>();
 
 	@Override
-	protected void onCreate(Bundle savedInstanceState) {		
+	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);		
 		setContentView(R.layout.activity_main);
 
@@ -220,6 +220,11 @@ public class MainActivity extends Activity {
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
 		switch (item.getItemId()) {
+		case R.id.action_tasks:
+			Intent myIntent = new Intent(MainActivity.this, ScheduleActivity.class);
+			//myIntent.putExtra("key",value);
+			MainActivity.this.startActivity(myIntent);
+			break;
 		case R.id.action_refresh:
 			recreate();
 			break;
