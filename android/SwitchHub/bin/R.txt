@@ -31,7 +31,7 @@ int drawable com_parse_ui_twitter_login_button_background_selector 0x7f020005
 int drawable com_parse_ui_twitter_login_logo 0x7f020006
 int drawable ic_action_new 0x7f020007
 int drawable ic_action_refresh 0x7f020008
-int drawable ic_action_timer 0x7f020009
+int drawable ic_action_time 0x7f020009
 int drawable ic_launcher 0x7f02000a
 int id action_add_device 0x7f0a0017
 int id action_refresh 0x7f0a0016

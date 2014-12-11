@@ -55,7 +55,7 @@ public final class R {
         public static final int com_parse_ui_twitter_login_logo=0x7f020006;
         public static final int ic_action_new=0x7f020007;
         public static final int ic_action_refresh=0x7f020008;
-        public static final int ic_action_timer=0x7f020009;
+        public static final int ic_action_time=0x7f020009;
         public static final int ic_launcher=0x7f02000a;
     }
     public static final class id {

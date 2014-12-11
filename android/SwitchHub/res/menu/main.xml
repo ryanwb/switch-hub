@@ -13,7 +13,7 @@
         android:title="@string/add_device"/>
     <item
         android:id="@+id/action_tasks"
-        android:icon="@drawable/ic_action_timer"
+        android:icon="@drawable/ic_action_time"
         android:showAsAction="always"
         android:title="@string/action_tasks"/>
 
