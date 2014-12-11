@@ -10,10 +10,16 @@ my_user = "zcpXqHWsbD"
 
 def main():
   print "Register to Parse"
-  register('kPTnWzHeMI900B83Vee52eXYqQWLrJGUBcc4XuJu', 'FWvTqnNw4IKDIHb70oyzqK0CjH3y3TNW8wvx8ytk',master_key=None)
+  try:
+    register('kPTnWzHeMI900B83Vee52eXYqQWLrJGUBcc4XuJu', 'FWvTqnNw4IKDIHb70oyzqK0CjH3y3TNW8wvx8ytk',master_key=None)
+  except Exception as e:
+    return
 
   # Get list of active appliances
-  active_appliances = ApplianceModel.Query.filter(user=my_user)
+  try:
+    active_appliances = ApplianceModel.Query.filter(user=my_user)
+  except Exception as e:
+    return
   
   # Connect to appliances
   btSockets = {}
@@ -37,8 +43,10 @@ def main():
   while True:
 
     if count == 4:
-      print "Going to check for new devices!"
-      new_appliances = ApplianceModel.Query.filter(new=True).filter(user=my_user)
+      try:
+        new_appliances = ApplianceModel.Query.filter(new=True).filter(user=my_user)
+      except Exception as e:
+        continue
       for appliance in new_appliances:
         connected = appliance.connect(btSockets,port_max)
         if connected == True:
